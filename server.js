@@ -4,25 +4,42 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 const helmet = require('helmet');
 
+const fccTestingRoutes = require('./routes/fcctesting.js');
+const runner = require('./test-runner');
+
 const app = express();
 
-// CONFIGURACIÓN DE SEGURIDAD (HELMET V3)
+// ==========================================
+// 1. CONFIGURACIÓN DE SEGURIDAD (HELMET V3)
+// ==========================================
 app.use(helmet.noSniff());
 app.use(helmet.xssFilter());
 app.use(helmet.noCache());
 app.use(helmet.hidePoweredBy({ setTo: 'PHP 7.4.3' }));
 
 app.use('/public', express.static(process.cwd() + '/public'));
+app.use('/assets', express.static(process.cwd() + '/assets'));
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
+
 app.use(cors({ origin: '*' })); 
 
-app.route('/').get((req, res) => {
-  res.send('<h1>Servidor de Juego Multijugador Seguro Activo</h1><p>Las cabeceras de Helmet estan configuradas correctamente.</p>');
-});
+app.route('/')
+  .get(function (req, res) {
+    res.send('<h1>Servidor Activo</h1>');
+  });
+
+// ESTO ES LO QUE LE FALTA A FREECODECAMP PARA VALIDAR LOS TESTS 16 AL 19
+try {
+  fccTestingRoutes(app);
+} catch(e) {
+  console.log('Rutas de pruebas no disponibles');
+}
     
-app.use((req, res) => { res.status(404).send('Not Found'); });
+app.use(function(req, res, next) {
+  res.status(404).type('text').send('Not Found');
+});
 
 const http = require('http').createServer(app);
 const io = require('socket.io')(http);
@@ -54,6 +71,8 @@ io.on('connection', (socket) => {
 });
 
 const portNum = process.env.PORT || 3000;
-http.listen(portNum, () => { console.log(`Escuchando en el puerto ${portNum}`); });
+http.listen(portNum, () => {
+  console.log(`Escuchando en el puerto ${portNum}`);
+});
 
 module.exports = app;
